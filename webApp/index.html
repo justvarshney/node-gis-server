@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link href="../lib/bootstrap/css/bootstrap.css" rel="stylesheet">
+	<title>Bing Maps</title>
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+
+      #map {
+        background-image: url('http://subtlepatterns.com/patterns/grey_wash_wall.png');
+      }
+
+      #map div.leaflet-tile-pane {
+        opacity: 1;
+      }
+
+    </style>
+    <link rel="stylesheet" href="../lib/bootstrap/css/bootstrap-responsive.css" >
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="../../dist/css/dvf.css" type="text/css" media="screen" />
+    <link rel="stylesheet" href="../css/example.css" type="text/css" media="screen" />
+        <link rel="stylesheet" href="../css/ui.css" type="text/css" media="screen" />
+        <link rel="stylesheet" href="../css/MarkerCluster.Default.css" type="text/css" media="screen" />
+        <link rel="stylesheet" href="../css/MarkerCluster.css" type="text/css" media="screen" />
+</head>
+
+<body>
+        <div class="navbar navbar-inverse">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">Block Group Data</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="http://tt/leaflet-dvf">Home</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="leaflet-clickable" style="fill:#3CA0D2">
+        <div style="fill-opacity:0.8; fill:#000000; stroke:#ffffff" >
+		<div id="map"></div>
+                </div>
+        </div>
+
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+        <script type="text/javascript" src="../lib/bootstrap/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+        <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.3"></script>
+        <script type="text/javascript" src="../lib/geohash.js"></script>
+        <script type="text/javascript" src="../lib/leaflet.markercluster-src.js"></script>
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.1/underscore-min.js"></script>
+        <script type="text/javascript" src="../../dist/leaflet-dvf.min.js"></script>
+        <script type="text/javascript" src="../../src/leaflet.dvf.experimental.js"></script>
+		<script type="text/javascript" src="./bing.js"></script>
+				  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script type="text/javascript">
+
+$(document).ready(function() {
+        var map;
+		map = d3.carto.map();
+        var legendControl;
+
+        // Function for resizing the map to fill the available space on the screen
+        var resize = function () {
+                var $map = $('#map');
+
+                $map.height($(window).height() - $('div.navbar').outerHeight());
+
+                if (map) {
+                      //  map.invalidateSize();
+                }
+        };
+
+        // Resize the map element on window resize
+        $(window).on('resize', function () {
+                resize();
+        });
+
+        // Resize the map element
+        resize();
+
+        // Initialize the map
+        map = L.map('map').setView([39, -75], 7);
+		var osmAttribution = '';
+		//var mapUrl = "//mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
+		//var bg = new L.TileLayer(mapUrl, {maxZoom: 18, attribution: osmAttribution ,subdomains: '1234'});
+		var bg = new L.BingLayer("dQuPfbNqb6N9sHgvCwF4~F1rCSxvonrUP7l3jxkhP0Q~AiMmhMhwxSLjUZFMAPsGptsqsiDKks3t-LWxkHmv0RfVtWJe2HAQB_S4EjMECoOz", {type: 'road'});
+		bg.addTo(map);
+		//map.addLayer(bg);
+        
+ $.ajax({
+        type: "GET",
+        url: "http://10.52.10.11:3000/fusion?minx=-78&miny=36&maxx=-60&maxy=43&srid=3857",
+        dataType: "text",
+        success: function(data) {processData(data);}
+     });
+
+function processData(data) {
+                var Geodata = [];
+var allTextLines = data.split(/\r\n|\n/);
+
+                for(i=0;i<allTextLines.length-1;i++){
+                var test = JSON.parse(allTextLines[i]);
+				
+				
+				var lines = allTextLines[i].split('|');
+				//var mystr = lines[1].replace("\"", "");
+				//var feature = wellknown.parse(mystr);
+				
+				Geodata.push({
+                        id: i,
+                        type: test.type,
+                        geometry: {
+                            coordinates: test.geometry.coordinates,
+                            type: test.geometry.type
+                        },
+						 properties: test.properties
+                    });
+//		geojsonLayer = L.geoJson(Geodata, {style: style,onEachFeature: onEachFeature});
+//        geojsonLayer.addTo(map);
+
+}
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.retail_index),
+		//fill: getColor(feature.properties.retail_index),
+        weight: 2,
+        opacity: 1,
+        color: 'blue',
+        dashArray: '0',
+        fillOpacity: 0.1
+    };
+}	
+
+function getColor(x) {
+	var col="";					  
+	if(x < 0.3){
+		col= '#FFCC00';
+	}else{
+		col= '#CC0000';
+	}
+	return col;
+};
+
+	function onEachFeature(feature, layer) {
+	var popupContent = "";
+		for (var k in feature.properties){
+			if (k!="wkt"){
+			if (feature.properties.hasOwnProperty(k)) {
+				popupContent="<p>" + popupContent+k+" : " + feature.properties[k] + "</p>"
+			}
+			}
+			}
+	
+/*			var popupContent = "<p>Retail Index : " + feature.properties.retail_index + "</p>" 
+					+ "<p>Services Index : " + feature.properties.services_index + "</p>"
+					+ "<p>Finance Index : " + feature.properties.finance_index + "</p>";
+
+			if (feature.properties && feature.properties.popupContent) {
+				popupContent += feature.properties.popupContent;
+			}
+*/
+			layer.bindPopup(popupContent);
+		}
+
+		geojsonLayer = L.geoJson(Geodata, {style: style,onEachFeature: onEachFeature});
+        geojsonLayer.addTo(map);
+        }
+});
+        </script>
+
+		
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8" type="text/javascript"></script>
+<script src="http://d3js.org/topojson.v1.min.js" type="text/javascript"></script>
+<script src="http://d3js.org/d3.geo.projection.v0.min.js" type="text/javascript"></script>
+<script src="http://bl.ocks.org/emeeks/raw/f3105fda25ff785dc5ed/tile.js" type="text/javascript"></script>
+<script src="http://bl.ocks.org/emeeks/raw/f3105fda25ff785dc5ed/d3.quadtiles.js" type="text/javascript"></script>
+<script src="http://bl.ocks.org/emeeks/raw/f3105fda25ff785dc5ed/d3.geo.raster.js" type="text/javascript"></script>
+<script src="https://rawgit.com/emeeks/d3-carto-map/master/d3.carto.map.js" type="text/javascript"></script>
+</body>
+</html>

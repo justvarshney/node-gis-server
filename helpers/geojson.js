@@ -3,7 +3,7 @@ exports.getFeatureResult = function(result, spatialcol) {
 		var crsobj = {
 			"type" : "name",
 			"properties" : {
-				"name" : "urn:ogc:def:crs:EPSG:6.3:4326"
+				"name" : "urn:ogc:def:crs:EPSG:6.3:3857"
 			}
 		};
 		//builds feature properties from database columns

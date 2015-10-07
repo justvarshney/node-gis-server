@@ -1,0 +1,64 @@
+var pg = require('pg');
+var geojson = require('../helpers/geojson');
+var jsonp = require('../helpers/jsonp');
+
+module.exports.controller = function (app) {
+
+	/* enable CORS */
+	app.all('*', function (req, res, next) {
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Access-Control-Allow-Headers", "X-Requested-With");
+		next();
+	});
+
+	/* feature retrieval */
+
+	/**
+	 * retrieve all features (this could be really slow and is probably not what you really want to do)
+	 */
+	 
+ app.get('/id', function(req, res){
+	res.send('id: ' + req.query.id);
+	console.log(req.query.id);
+ });
+
+ app.get('/fusion', function (req, res, next) {
+	 var minx=req.query.minx;
+	 var miny=req.query.miny;
+	 var maxx=req.query.maxx;
+	 var maxy=req.query.maxy;
+	 var srid=req.query.srid;
+	 
+//	 res.send('minx: ' + minx + 'miny: ' + miny + 'maxx: '+ maxx + 'maxy: ' + maxy + 'srid: ' + srid);
+
+		 var sql = "SELECT wkt,hazdesc,burnfreq,parceldens,foehnwinds FROM li.ca_firerisk as mytable WHERE mytable.wkb_geometry && ST_MakeEnvelope(" + minx + "," + miny + "," + maxx + "," + maxy + "," + srid + ") limit 10;";
+		
+		var retval = {
+			schema : schemaname,
+			table : tablename,
+			columns : []
+		};
+		client.connect();
+		var query = client.query(sql);
+		query.on('row', function (result) {
+			var props = new Object;
+			if (!result) {
+				return res.send('No data found');
+			} else {
+				retval.columns.push({
+					column : result.column_name,
+					dataType : result.type,
+					description : result.comments
+				});
+			}
+		});
+
+		query.on('end', function (result) {
+			res.setHeader('Content-Type', 'application/json');
+			res.send(jsonp.getJsonP(req.query.callback, retval));
+			//
+		});	
+
+});
+ 
+}
