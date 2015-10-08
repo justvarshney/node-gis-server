@@ -2,6 +2,7 @@ var pg = require('pg');
 var geojson = require('../helpers/geojson');
 var jsonp = require('../helpers/jsonp');
 
+
 module.exports.controller = function (app) {
 
 	/* enable CORS */
@@ -88,4 +89,63 @@ console.log("Completed");
 	 
 	});
 }); 
+
+app.get('/fusion/:table', function (req, res, next) {
+	 var client = new pg.Client(app.conString);
+	 var minx=req.query.minx;
+	 var miny=req.query.miny;
+	 var maxx=req.query.maxx;
+	 var maxy=req.query.maxy;
+	 var srid=req.query.srid;
+	 var tablename=req.params.table;
+	 
+		var crsobj = {
+			"type" : "name",
+			"properties" : {
+			"name" : "urn:ogc:def:crs:EPSG:6.3:" + srid
+			}
+		};
+		client.connect();
+		var spatialcol = "";
+		var schemaname="li";
+		var meta = client.query("select * from geometry_columns where f_table_name = '" + tablename + "' and f_table_schema = '" + schemaname + "';");
+		meta.on('row', function (row) {
+			var query;
+			var coll;
+			spatialcol = row.f_geometry_column;
+			
+			var sql = "SELECT st_asgeojson(st_transform(" + spatialcol + "," + srid + ")) as geojson, * FROM li." + tablename + " as mytable WHERE mytable." + spatialcol + " && ST_MakeEnvelope(" + minx + "," + miny + "," + maxx + "," + maxy + "," + srid + ") limit 3000;";
+			console.log(sql);
+			query = client.query(sql);
+			coll = {
+					type : "FeatureCollection",
+					features : []
+				};
+			res.writeHeader(200,{'Content-Type':'text/event-stream'});
+			query.on('row', function (result) {
+				if (!result) {
+					return res.send('No data found');
+				} else {
+					//coll.features.push(geojson.getFeatureResult(result, spatialcol));
+				}
+					res.write(jsonp.getJsonP(req.query.callback, geojson.getFeatureResult(result, spatialcol)));
+					res.write("\n");
+			});
+
+			query.on('end', function (err, result) {
+				//res.setHeader('Content-Type', 'text/event-stream');
+				//res.send(jsonp.getJsonP(req.query.callback, coll));
+				res.end();
+				console.log("Completed");
+			});
+
+			query.on('error', function (error) {
+				//handle the error
+				//res.status(500).send(error);
+				next();
+			});	 
+	 
+	});
+}); 
+
 }

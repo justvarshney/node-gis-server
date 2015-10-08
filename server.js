@@ -5,6 +5,8 @@ var express = require('express'),
 var app = express();
 app.use(express.bodyParser());
 app.use(app.router);
+
+
 app.conString = "postgres://admin:password@10.52.10.11:5432/li";
 //app.use(error);
 
